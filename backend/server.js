@@ -22,7 +22,7 @@ connectDB();
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: "https://chatapp-friends.netlify.app/login", credentials: true }));
+app.use(cors({ origin: "https://chatapp-friends.netlify.app", credentials: true }));
 app.use("/api/auth", authRoutes);
 app.use((req, res, next) => {
   req.io = io; // attach socket instance
@@ -32,7 +32,7 @@ app.use("/api/messages", messageRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "https://chatapp-friends.netlify.app/login", credentials: true },
+  cors: { origin: "https://chatapp-friends.netlify.app", credentials: true },
 });
 
 const onlineUsers = new Map();
