@@ -22,7 +22,14 @@ connectDB();
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: "https://chatapp-friends.netlify.app", credentials: true }));
+app.use(
+  cors({ origin: "https://chatapp-friends.netlify.app", credentials: true })
+);
+
+app.get("/ping", (req, res) => {
+  res.json({ status: "ok", time: new Date() });
+});
+
 app.use("/api/auth", authRoutes);
 app.use((req, res, next) => {
   req.io = io; // attach socket instance
@@ -111,21 +118,33 @@ io.on("connection", (socket) => {
 
   //deletemsg
   socket.on("deleteMessage", async ({ messageId }) => {
-  try {
-    const msg = await Message.findById(messageId);
-    if (!msg) return;
+    try {
+      const msg = await Message.findById(messageId);
+      if (!msg) return;
 
-    await msg.deleteOne();
+      await msg.deleteOne();
 
-    // notify both users
-    io.emit("messageDeleted", { messageId });
-  } catch (err) {
-    console.error("Delete failed:", err.message);
-  }
+      // notify both users
+      io.emit("messageDeleted", { messageId });
+    } catch (err) {
+      console.error("Delete failed:", err.message);
+    }
+  });
 });
 
-});
+server.listen(process.env.PORT, () => {
+  console.log(` Server running on ${process.env.PORT}`);
 
-server.listen(process.env.PORT, () =>
-  console.log(` Server running on ${process.env.PORT}`)
-);
+
+ const PING_URL = "https://chatapp-250t.onrender.com/ping";
+  setInterval(async () => {
+    try {
+      const res = await axios.get(PING_URL);
+      console.log("Self-ping success:", res.status);
+    } catch (err) {
+      console.error("Self-ping failed:", err.message);
+    }
+  }, 5 * 60 * 1000);
+
+
+});
