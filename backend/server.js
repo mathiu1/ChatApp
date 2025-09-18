@@ -9,7 +9,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import Message from "./models/Message.js";
 import User from "./models/User.js";
-import axios from "axios"; // ✅  needed for self-ping
+import axios from "axios"; // ✅ FIX: needed for self-ping
 
 import path from "path";
 import { fileURLToPath } from "url";
