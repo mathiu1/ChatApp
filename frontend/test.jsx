@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import socket from "./socket";
 import { useAuth } from "./context/AuthContext";
@@ -13,30 +13,15 @@ export default function App() {
   const [contacts, setContacts] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const API_URL = import.meta.env.VITE_API_URL;
-
-  // 🔑 Refs for latest values inside socket handlers
-  const contactsRef = useRef(contacts);
-  const selectedUserRef = useRef(selectedUser);
-
-  useEffect(() => {
-    contactsRef.current = contacts;
-  }, [contacts]);
-
-  useEffect(() => {
-    selectedUserRef.current = selectedUser;
-  }, [selectedUser]);
-
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // mobile sidebar state
+const API_URL = import.meta.env.VITE_API_URL;
   // Load contacts after login
   useEffect(() => {
     if (user) socket.emit("addUser", user.username);
 
     const fetchContacts = async () => {
       try {
-        const { data } = await axios.get(`${API_URL}/api/auth/users`, {
-          withCredentials: true,
-        });
+        const { data } = await axios.get(`${API_URL}/api/auth/users`,{ withCredentials: true });
         setContacts(data);
       } catch (err) {
         console.error(err);
@@ -45,14 +30,11 @@ export default function App() {
     fetchContacts();
   }, [user]);
 
-  // 🔥 Socket listeners (register once per user session)
+  // Socket listeners
   useEffect(() => {
     if (!user) return;
 
     const handleMessage = (msg) => {
-      const contacts = contactsRef.current;
-      const selectedUser = selectedUserRef.current;
-
       const senderInfo =
         msg.sender === user.username
           ? { username: user.username, avatar: user.avatar, name: user.name }
@@ -79,22 +61,7 @@ export default function App() {
         (msg.sender === selectedUser.username ||
           msg.receiver === selectedUser.username)
       ) {
-        setMessages((prev) => {
-          // 🔑 Replace optimistic fake msg with real one
-          const idx = prev.findIndex(
-            (m) =>
-              m.optimistic &&
-              m.text === msg.text &&
-              m.sender === msg.sender &&
-              m.receiver === msg.receiver
-          );
-          if (idx !== -1) {
-            const copy = [...prev];
-            copy[idx] = enriched;
-            return copy;
-          }
-          return [...prev, enriched];
-        });
+        setMessages((prev) => [...prev, enriched]);
       } else {
         setContacts((prev) =>
           prev.map((c) =>
@@ -150,9 +117,9 @@ export default function App() {
       socket.off("onlineUsers", handleOnlineUsers);
       socket.off("messageDeleted", handleDeleted);
     };
-  }, [user]); // ✅ only re-run if user changes
+  }, [selectedUser?.username, user]);
 
-  // Keep selectedUser in sync with contacts
+  // Keep selectedUser synced
   useEffect(() => {
     if (!selectedUser) return;
     const updated = contacts.find(
@@ -163,15 +130,14 @@ export default function App() {
     }
   }, [contacts, selectedUser]);
 
-  // Load messages for selected chat
+  // Load messages
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedUser) return;
 
       try {
         const { data } = await axios.get(
-          `${API_URL}/api/messages/${selectedUser.username}`,
-          { withCredentials: true }
+          `${API_URL}/api/messages/${selectedUser.username}`,{ withCredentials: true }
         );
 
         const enriched = data.map((msg) => {
@@ -209,27 +175,11 @@ export default function App() {
       }
     };
     fetchMessages();
-  }, [selectedUser?.username, user.username]);
+  }, [selectedUser?.username, contacts, user]);
 
-  // 🔥 Optimistic message sending
+  // Send message
   const sendAndSave = async (text) => {
     if (!text || !selectedUser) return;
-
-    // Optimistic update
-    const fakeMsg = {
-      _id: Date.now().toString(),
-      sender: user.username,
-      receiver: selectedUser.username,
-      text,
-      createdAt: new Date().toISOString(),
-      read: false,
-      senderAvatar: user.avatar,
-      senderName: user.name,
-      optimistic: true, // 🔑 mark as optimistic
-    };
-    setMessages((prev) => [...prev, fakeMsg]);
-
-    // Send to server
     socket.emit("sendMessage", {
       sender: user.username,
       receiver: selectedUser.username,
@@ -251,9 +201,7 @@ export default function App() {
   // Logout
   const handleLogout = async () => {
     try {
-      await axios.post(`${API_URL}/api/auth/logout`, {
-        withCredentials: true,
-      });
+      await axios.post(`${API_URL}/api/auth/logout`,{ withCredentials: true });
       socket.disconnect();
       setTimeout(() => socket.connect(), 1000);
     } catch (err) {
@@ -263,14 +211,13 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen max-h-screen overflow-hidden
-     bg-gray-100 flex flex-col ">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
       <Navbar
         onLogout={handleLogout}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
-      <div className="flex-1 flex overflow-hidden ">
+      <div className="flex-1  flex overflow-hidden">
         {/* Sidebar */}
         <Sidebar
           contacts={contacts}
@@ -281,7 +228,7 @@ export default function App() {
         />
 
         {/* Chatbox */}
-        <div className="flex-1 bg-gray-50 px-4">
+        <div className="flex-1 bg-gray-50  px-4  ">
           {selectedUser ? (
             <ChatBox
               messages={messages}
@@ -289,19 +236,17 @@ export default function App() {
               selectedUser={selectedUser}
             />
           ) : (
-            <div className="text-center min-h-screen -mt-16 flex flex-col items-center justify-center">
-              <p className="text-gray-500 mb-4 text-sm md:text-lg">
-                Select a contact to start chatting
-              </p>
+             <div className=" text-center min-h-screen -mt-16 flex flex-col items-center justify-center">
+      <p className="text-gray-500 mb-4 text-sm md:text-lg ">Select a contact to start chatting</p>
 
-              {/* Start Chat button (mobile only) */}
-              <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="md:hidden bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-2 rounded-full shadow"
-              >
-                Start Chat
-              </button>
-            </div>
+      {/* Start Chat button (only visible on mobile) */}
+      <button
+        onClick={() => setIsSidebarOpen(true)}
+        className="md:hidden bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-2 rounded-full shadow"
+      >
+        Start Chat
+      </button>
+    </div>
           )}
         </div>
       </div>

@@ -2,7 +2,7 @@ import React from "react";
 import { X } from "lucide-react";
 
 export default function Sidebar({ contacts, selectUser, selected, isOpen, onClose }) {
-  //  Sort: most recent chat at top
+  // Sort contacts by last message time
   const sortedContacts = [...contacts].sort((a, b) => {
     const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
     const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
@@ -11,8 +11,15 @@ export default function Sidebar({ contacts, selectUser, selected, isOpen, onClos
 
   return (
     <aside
-      className={`fixed md:static top-0 left-0 h-full md:h-auto w-64 md:w-1/3 bg-white shadow-lg md:shadow-none z-50 md:z-30 transform transition-transform duration-300 ease-in-out max-w-xs
-      ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+      className={`
+        fixed md:sticky max-w-xs
+        top-[0px]  left-0
+        h-[calc(100vh-56px)] md:h-[calc(100vh-56px)]
+        w-64 md:w-1/3 bg-white shadow-lg md:shadow-none
+        z-50 md:z-30
+        transform transition-transform duration-300 ease-in-out
+        ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+      `}
     >
       {/* Mobile Header with Close Button */}
       <div className="flex justify-between items-center px-4 py-3 border-b md:hidden">
@@ -25,13 +32,13 @@ export default function Sidebar({ contacts, selectUser, selected, isOpen, onClos
         </button>
       </div>
 
-      {/* ✅ Desktop Header */}
+      {/* Desktop Header */}
       <h3 className="font-bold text-lg px-4 py-3 hidden md:block border-b">
         Contacts
       </h3>
 
-      {/* ✅ Scrollable contacts list */}
-      <div className="p-4 space-y-2 overflow-y-auto h-[calc(100%-4rem)] md:h-[calc(100vh-6rem)]">
+      {/* Scrollable contacts list */}
+      <div className="p-4 space-y-2 overflow-y-auto h-[calc(100%-4rem)] md:h-[calc(100%-3.5rem)]">
         {sortedContacts.length === 0 && (
           <p className="text-gray-400 text-sm">No contacts yet</p>
         )}

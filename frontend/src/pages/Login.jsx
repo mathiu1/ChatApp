@@ -6,11 +6,12 @@ import { useNavigate } from "react-router-dom";
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const handleSuccess = async (credentialResponse) => {
     try {
       const { data } = await axios.post(
-        "http://localhost:5000/api/auth/google",
+        `${API_URL}/api/auth/google`,
         { token: credentialResponse.credential },
         { withCredentials: true }
       );
