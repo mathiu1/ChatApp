@@ -22,7 +22,7 @@ router.post("/google", async (req, res) => {
         username: email,
         password: "google-oauth",
         avatar: picture,
-        name:name,
+        name: name,
       });
     }
     const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
@@ -30,8 +30,8 @@ router.post("/google", async (req, res) => {
     });
     res.cookie("token", jwtToken, {
       httpOnly: true,
-      //sameSite: "lax",
-      //secure: false,
+      sameSite: "None",
+      secure: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     res.json({
@@ -42,8 +42,7 @@ router.post("/google", async (req, res) => {
   }
 });
 
-
-router.post("/logout",protect, async (req, res) => {
+router.post("/logout", protect, async (req, res) => {
   try {
     if (req.user) {
       // update last seen
@@ -53,11 +52,11 @@ router.post("/logout",protect, async (req, res) => {
       });
     }
 
-     res.clearCookie("token", {
-    httpOnly: true,
-    //sameSite: "lax",
-    //secure: false
-  });
+    res.clearCookie("token", {
+      httpOnly: true,
+      sameSite: "None",
+      secure: true,
+    });
     return res.json({ msg: "Logged out" });
   } catch (err) {
     console.error("Logout error:", err.message);
@@ -65,15 +64,13 @@ router.post("/logout",protect, async (req, res) => {
   }
 });
 
-
-
 router.get("/users", protect, async (req, res) => {
-  const users = await User.find().select("username name avatar online lastSeen -_id");
+  const users = await User.find().select(
+    "username name avatar online lastSeen -_id"
+  );
   const filtered = users.filter((u) => u.username !== req.user.username);
   res.json(filtered);
 });
-
-
 
 // Already logged-in user info
 router.get("/me", protect, async (req, res) => {

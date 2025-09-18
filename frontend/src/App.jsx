@@ -13,7 +13,7 @@ export default function App() {
   const [contacts, setContacts] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // 👈 mobile sidebar state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); //  mobile sidebar state
 
   // Load contacts after login
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function App() {
 
     const fetchContacts = async () => {
       try {
-        const { data } = await axios.get("http://localhost:5000/api/auth/users");
+        const { data } = await axios.get("http://localhost:5000/api/auth/users",{ withCredentials: true });
         setContacts(data);
       } catch (err) {
         console.error(err);
