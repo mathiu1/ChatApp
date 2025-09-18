@@ -49,7 +49,9 @@ router.post("/logout", protect, async (req, res) => {
       await User.findByIdAndUpdate(req.user._id, {
         online: false,
         lastSeen: new Date(),
+         
       });
+      //await User.findByIdAndDelete(req.user._id);
     }
 
     res.clearCookie("token", {
@@ -57,7 +59,7 @@ router.post("/logout", protect, async (req, res) => {
       sameSite: "None",
       secure: true,
     });
-    return res.json({ msg: "Logged out" });
+    return res.json({ msg: "User account deleted & logged out" });
   } catch (err) {
     console.error("Logout error:", err.message);
     res.status(500).json({ error: "Logout failed" });

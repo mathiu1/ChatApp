@@ -9,6 +9,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import Message from "./models/Message.js";
 import User from "./models/User.js";
+import axios from "axios"; // ✅  needed for self-ping
 
 import path from "path";
 import { fileURLToPath } from "url";
@@ -51,11 +52,22 @@ io.on("connection", (socket) => {
     io.emit("onlineUsers", Array.from(onlineUsers.keys()));
 
     // mark DB user online
-    await User.findOneAndUpdate(
+    const userDoc = await User.findOneAndUpdate(
       { username },
       { online: true },
       { new: true }
     ).exec();
+
+    // ✅ notify others a user joined
+    if (userDoc) {
+      io.emit("userJoined", {
+        username: userDoc.username,
+        name: userDoc.name,
+        avatar: userDoc.avatar,
+        online: true,
+        lastSeen: userDoc.lastSeen,
+      });
+    }
   });
 
   // Send message
@@ -107,16 +119,21 @@ io.on("connection", (socket) => {
         onlineUsers.delete(username);
         io.emit("onlineUsers", Array.from(onlineUsers.keys()));
 
-        await User.findOneAndUpdate(
+        const userDoc = await User.findOneAndUpdate(
           { username },
           { online: false, lastSeen: new Date() },
           { new: true }
         ).exec();
+
+        // ✅ notify others user left
+        if (userDoc) {
+          io.emit("userLeft", username);
+        }
       }
     }
   });
 
-  //deletemsg
+  // Delete msg
   socket.on("deleteMessage", async ({ messageId }) => {
     try {
       const msg = await Message.findById(messageId);
@@ -135,8 +152,7 @@ io.on("connection", (socket) => {
 server.listen(process.env.PORT, () => {
   console.log(` Server running on ${process.env.PORT}`);
 
-
- const PING_URL = "https://chatapp-250t.onrender.com/ping";
+  const PING_URL = "https://chatapp-250t.onrender.com/ping";
   setInterval(async () => {
     try {
       const res = await axios.get(PING_URL);
@@ -145,6 +161,4 @@ server.listen(process.env.PORT, () => {
       console.error("Self-ping failed:", err.message);
     }
   }, 5 * 60 * 1000);
-
-
 });
