@@ -3,6 +3,7 @@ import socket from "../socket";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { Trash2, Loader2 } from "lucide-react";
+import api from "../api/axiosClient";
 
 export default function ChatBox({ messages, onSend, selectedUser, loading }) {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -11,6 +12,7 @@ export default function ChatBox({ messages, onSend, selectedUser, loading }) {
   const [typing, setTyping] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const [preview, setPreview] = useState(null); // 🔹 For avatar modal
   const endRef = useRef();
   const longPressTimer = useRef(null);
   const { user } = useAuth();
@@ -86,7 +88,7 @@ export default function ChatBox({ messages, onSend, selectedUser, loading }) {
   // Delete message
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${API_URL}/api/messages/${id}`);
+      await api.delete(`/api/messages/${id}`);
       socket.emit("deleteMessage", { messageId: id });
       setSelectedMessage(null);
     } catch (err) {
@@ -154,6 +156,10 @@ export default function ChatBox({ messages, onSend, selectedUser, loading }) {
             src={selectedUser.avatar}
             alt="avatar"
             className="w-10 h-10 rounded-full border shadow-sm"
+            onClick={(e) => {
+              e.stopPropagation(); //  prevent selecting user
+              setPreview(selectedUser.avatar);
+            }}
           />
         )}
         <div>
@@ -232,7 +238,7 @@ export default function ChatBox({ messages, onSend, selectedUser, loading }) {
                     }
                     onTouchEnd={handleTouchEnd}
                   >
-                    {/* ✅ Always show avatar */}
+                    {/*  Always show avatar */}
                     {!mine && (
                       <img
                         src={m.senderAvatar}
@@ -249,52 +255,57 @@ export default function ChatBox({ messages, onSend, selectedUser, loading }) {
                       } ${
                         selectedMessage === m._id ? "ring-2 ring-red-400" : ""
                       }`}
+                      style={
+                        mine
+                          ? { backgroundColor: "#2563eb", color: "#ffffff" }
+                          : { backgroundColor: "#f3f4f6", color: "#1f2937" }
+                      }
                     >
                       <div
-                      className={`text-sm leading-snug whitespace-pre-wrap break-words break-all overflow-hidden ${
-                        mine ? "text-white" : "text-gray-800"
-                      }`}
-                      dangerouslySetInnerHTML={{
-                        __html: m.text
-                          // ✅ URLs (http, https, www.)
-                          .replace(
-                            /((https?:\/\/[^\s]+)|(www\.[^\s]+))/g,
-                            (match) => {
-                              let url = match.startsWith("http")
-                                ? match
-                                : `https://${match}`;
-                              let display =
-                                match.length > 40
-                                  ? match.slice(0, 37) + "..."
-                                  : match;
+                        className={`text-sm leading-snug whitespace-pre-wrap break-words break-all overflow-hidden ${
+                          mine ? "text-white" : "text-gray-800"
+                        }`}
+                        dangerouslySetInnerHTML={{
+                          __html: m.text
+                            //  URLs (http, https, www.)
+                            .replace(
+                              /((https?:\/\/[^\s]+)|(www\.[^\s]+))/g,
+                              (match) => {
+                                let url = match.startsWith("http")
+                                  ? match
+                                  : `https://${match}`;
+                                let display =
+                                  match.length > 40
+                                    ? match.slice(0, 37) + "..."
+                                    : match;
 
+                                let linkClass = mine
+                                  ? "text-white underline"
+                                  : "text-blue-500 underline";
+
+                                return `<a href="${url}" target="_blank" rel="noopener noreferrer" title="${url}" class="${linkClass} break-words break-all">${display}</a>`;
+                              }
+                            )
+                            //  Emails
+                            .replace(
+                              /([\w.-]+@[\w.-]+\.[A-Za-z]{2,})/g,
+                              (match) => {
+                                let linkClass = mine
+                                  ? "text-white underline"
+                                  : "text-blue-500 underline";
+                                return `<a href="mailto:${match}" title="Send email to ${match}" class="${linkClass} break-words break-all">${match}</a>`;
+                              }
+                            )
+                            //  Phone numbers
+                            .replace(/(\+?\d[\d\s-]{7,}\d)/g, (match) => {
+                              const tel = match.replace(/[\s-]/g, "");
                               let linkClass = mine
                                 ? "text-white underline"
                                 : "text-blue-500 underline";
-
-                              return `<a href="${url}" target="_blank" rel="noopener noreferrer" title="${url}" class="${linkClass} break-words break-all">${display}</a>`;
-                            }
-                          )
-                          // ✅ Emails
-                          .replace(
-                            /([\w.-]+@[\w.-]+\.[A-Za-z]{2,})/g,
-                            (match) => {
-                              let linkClass = mine
-                                ? "text-white underline"
-                                : "text-blue-500 underline";
-                              return `<a href="mailto:${match}" title="Send email to ${match}" class="${linkClass} break-words break-all">${match}</a>`;
-                            }
-                          )
-                          // ✅ Phone numbers
-                          .replace(/(\+?\d[\d\s-]{7,}\d)/g, (match) => {
-                            const tel = match.replace(/[\s-]/g, "");
-                            let linkClass = mine
-                              ? "text-white underline"
-                              : "text-blue-500 underline";
-                            return `<a href="tel:${tel}" title="Call ${match}" class="${linkClass} break-words break-all">${match}</a>`;
-                          }),
-                      }}
-                    ></div>
+                              return `<a href="tel:${tel}" title="Call ${match}" class="${linkClass} break-words break-all">${match}</a>`;
+                            }),
+                        }}
+                      ></div>
 
                       <div className="text-[11px] mt-1 flex items-center justify-end gap-1">
                         <span className="opacity-70">
@@ -365,6 +376,19 @@ export default function ChatBox({ messages, onSend, selectedUser, loading }) {
           Send
         </button>
       </form>
+      {/* 🔹 Image Preview Modal */}
+      {preview && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-[999]"
+          onClick={() => setPreview(null)}
+        >
+          <img
+            src={preview}
+            alt="preview"
+            className="max-w-[90%] max-h-[80%] rounded-lg shadow-lg object-contain"
+          />
+        </div>
+      )}
     </div>
   );
 }

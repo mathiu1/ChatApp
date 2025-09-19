@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { X } from "lucide-react";
 
 export default function Sidebar({
@@ -7,33 +7,24 @@ export default function Sidebar({
   selected,
   isOpen,
   onClose,
-  loading, 
+  loading,
 }) {
-  // Sort contacts by last message time
-const sortedContacts = [...contacts].sort((a, b) => {
-  // 🔹 1. Online first
-  if (a.online !== b.online) {
-    return b.online - a.online; // true > false
-  }
+  const [preview, setPreview] = useState(null); // 🔹 For avatar modal
 
-  // 🔹 2. Unread count (higher first)
-  if ((b.unread || 0) !== (a.unread || 0)) {
-    return (b.unread || 0) - (a.unread || 0);
-  }
+  // Sort contacts
+  const sortedContacts = [...contacts].sort((a, b) => {
+    if (a.online !== b.online) return b.online - a.online;
+    if ((b.unread || 0) !== (a.unread || 0))
+      return (b.unread || 0) - (a.unread || 0);
 
-  // 🔹 3. Last message time
-  const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
-  const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
-  if (aTime !== bTime) {
-    return bTime - aTime;
-  }
+    const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+    const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+    if (aTime !== bTime) return bTime - aTime;
 
-  // 🔹 4. Fallback: lastSeen
-  const aSeen = a.lastSeen ? new Date(a.lastSeen).getTime() : 0;
-  const bSeen = b.lastSeen ? new Date(b.lastSeen).getTime() : 0;
-  return bSeen - aSeen;
-});
-
+    const aSeen = a.lastSeen ? new Date(a.lastSeen).getTime() : 0;
+    const bSeen = b.lastSeen ? new Date(b.lastSeen).getTime() : 0;
+    return bSeen - aSeen;
+  });
 
   return (
     <>
@@ -59,7 +50,7 @@ const sortedContacts = [...contacts].sort((a, b) => {
           ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
-        {/* Mobile Header with Close Button */}
+        {/* Mobile Header */}
         <div className="flex justify-between items-center px-4 py-3 border-b md:hidden">
           <h3 className="font-bold text-lg">Contacts</h3>
           <button onClick={onClose} className="p-2 rounded hover:bg-gray-200">
@@ -72,9 +63,9 @@ const sortedContacts = [...contacts].sort((a, b) => {
           Contacts
         </h3>
 
-        {/* Scrollable contacts list */}
+        {/* Scrollable contacts */}
         <div className="p-4 space-y-2 overflow-y-auto h-[calc(100%-4rem)] md:h-[calc(100%-3.5rem)]">
-          {/* 🔹 Loading State */}
+          {/* Loading skeleton */}
           {loading &&
             Array.from({ length: 6 }).map((_, i) => (
               <div
@@ -89,25 +80,30 @@ const sortedContacts = [...contacts].sort((a, b) => {
               </div>
             ))}
 
-          {/* 🔹 No contacts */}
+          {/* No contacts */}
           {!loading && sortedContacts.length === 0 && (
             <p className="text-gray-400 text-sm">No contacts yet</p>
           )}
 
-          {/* 🔹 Contacts */}
+          {/* Contacts */}
           {!loading &&
             sortedContacts.map((c) => (
               <div
                 key={c.username}
                 onClick={() => {
                   selectUser(c);
-                  onClose(); // close sidebar on mobile
+                  onClose();
                 }}
                 className={`flex items-center justify-between cursor-pointer px-3 py-2 rounded-lg transition ${
                   selected === c.username
                     ? "bg-blue-100 text-blue-700"
                     : "hover:bg-gray-100"
                 }`}
+                style={
+                  selected === c.username
+                    ? { backgroundColor: "#dbeafe", color: "#1d4ed8" } // ✅ bg-blue-100 & text-blue-700 fallback
+                    : {}
+                }
               >
                 {/* Avatar + Online Dot */}
                 <div className="flex items-center gap-3">
@@ -116,7 +112,11 @@ const sortedContacts = [...contacts].sort((a, b) => {
                       <img
                         src={c.avatar}
                         alt="avatar"
-                        className="w-10 h-10 rounded-full border"
+                        className="w-10 h-10 rounded-full border cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation(); // prevent selecting user
+                          setPreview(c.avatar);
+                        }}
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full border bg-gray-300" />
@@ -135,12 +135,45 @@ const sortedContacts = [...contacts].sort((a, b) => {
                       {c.online
                         ? "Online"
                         : c.lastSeen
-                        ? `last seen ${new Date(
-                            c.lastSeen
-                          ).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}`
+                        ? (() => {
+                            const lastSeenDate = new Date(c.lastSeen);
+                            const today = new Date();
+                            const yesterday = new Date();
+                            yesterday.setDate(today.getDate() - 1);
+
+                            if (
+                              lastSeenDate.toDateString() ===
+                              today.toDateString()
+                            ) {
+                              return `last seen ${lastSeenDate.toLocaleTimeString(
+                                [],
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}`;
+                            } else if (
+                              lastSeenDate.toDateString() ===
+                              yesterday.toDateString()
+                            ) {
+                              return `Yesterday, ${lastSeenDate.toLocaleTimeString(
+                                [],
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}`;
+                            } else {
+                              return `${lastSeenDate.toLocaleDateString([], {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })}, ${lastSeenDate.toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}`;
+                            }
+                          })()
                         : "Offline"}
                     </div>
                   </div>
@@ -156,6 +189,20 @@ const sortedContacts = [...contacts].sort((a, b) => {
             ))}
         </div>
       </aside>
+
+      {/* 🔹 Image Preview Modal */}
+      {preview && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-[999]"
+          onClick={() => setPreview(null)}
+        >
+          <img
+            src={preview}
+            alt="preview"
+            className="max-w-[90%] max-h-[80%] rounded-lg shadow-lg object-contain"
+          />
+        </div>
+      )}
     </>
   );
 }

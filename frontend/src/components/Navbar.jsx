@@ -9,12 +9,16 @@ export default function Navbar({ onLogout, onToggleSidebar }) {
   return (
     <nav
       className="
-        fixed top-0 left-0 right-0
-        bg-gradient-to-r from-blue-500 to-blue-600
-        text-white px-4 sm:px-6 py-3
-        flex justify-between items-center
-        shadow-md z-50
-      "
+    fixed top-0 left-0 right-0
+    bg-gradient-to-r from-blue-500 to-blue-600
+    text-white px-4 sm:px-6 py-3
+    flex justify-between items-center
+    shadow-md z-50
+  "
+      style={{
+        background: "linear-gradient(to right, #3b82f6, #2563eb)", // fallback gradient
+        color: "#ffffff", // ensure text is white
+      }}
     >
       {/* Left: Logo + Mobile Menu */}
       <div className="flex items-center gap-3">
@@ -58,7 +62,24 @@ export default function Navbar({ onLogout, onToggleSidebar }) {
           {/* Logout Button */}
           <button
             onClick={onLogout}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium"
+            className="
+    flex items-center gap-1.5 sm:gap-2
+    px-3 sm:px-4 py-1.5 rounded
+    transition-all duration-200 shadow-sm hover:shadow-md
+    text-sm font-medium text-white
+  "
+            style={{
+              background: "linear-gradient(to right, #ef4444, #dc2626)", // 🔴 normal gradient
+              color: "#ffffff",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background =
+                "linear-gradient(to right, #dc2626, #b91c1c)"; // 🔴 hover gradient
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background =
+                "linear-gradient(to right, #ef4444, #dc2626)"; // 🔴 back to normal
+            }}
           >
             <LogOut size={16} />
             <span className="hidden sm:inline">Logout</span>

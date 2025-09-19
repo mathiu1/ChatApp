@@ -2,6 +2,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import api from "../api/axiosClient";
 
 export default function Login() {
   const { login } = useAuth();
@@ -15,6 +16,11 @@ export default function Login() {
         { token: credentialResponse.credential },
         { withCredentials: true }
       );
+
+        if (data.token) {
+      localStorage.setItem("token", data.token);
+    }
+
       login(data.user);
       navigate("/");
     } catch {

@@ -2,21 +2,22 @@ import React, { useState, useRef, useEffect } from "react";
 import socket from "../socket";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
-import { Trash2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
+import api from "../api/axiosClient";
 
-export default function ChatBox({ messages, onSend, selectedUser }) {
-
-const API_URL = import.meta.env.VITE_API_URL;
+export default function ChatBox({ messages, onSend, selectedUser, loading }) {
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const [text, setText] = useState("");
   const [typing, setTyping] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const [preview, setPreview] = useState(null); // 🔹 For avatar modal
   const endRef = useRef();
   const longPressTimer = useRef(null);
   const { user } = useAuth();
 
-  // Auto scroll
+  // Auto scroll on new messages
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
@@ -87,7 +88,8 @@ const API_URL = import.meta.env.VITE_API_URL;
   // Delete message
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${API_URL}/api/messages/${id}`);
+      
+      await api.delete(`/api/messages/${id}`);
       socket.emit("deleteMessage", { messageId: id });
       setSelectedMessage(null);
     } catch (err) {
@@ -105,18 +107,60 @@ const API_URL = import.meta.env.VITE_API_URL;
     clearTimeout(longPressTimer.current);
   };
 
+  //  Group messages by day
+  const groupMessagesByDate = () => {
+    const groups = {};
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    messages.forEach((msg) => {
+      const msgDate = new Date(msg.createdAt);
+      let label;
+
+      if (msgDate.toDateString() === today.toDateString()) {
+        label = "Today";
+      } else if (msgDate.toDateString() === yesterday.toDateString()) {
+        label = "Yesterday";
+      } else {
+        label = msgDate.toLocaleDateString([], {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+      }
+
+      if (!groups[label]) groups[label] = [];
+      groups[label].push(msg);
+    });
+
+    return groups;
+  };
+
+  const grouped = groupMessagesByDate();
+
   return (
     <div
-      className="flex flex-col h-[36rem] md:h-full bg-white rounded-lg shadow relative"
+      className="flex flex-col h-full md:h-screen bg-white rounded-lg shadow relative"
       onClick={() => setSelectedMessage(null)}
     >
       {/* Header */}
-      <header className="flex items-center gap-3 p-4 border-b bg-white md:static fixed top-14 left-0 right-0 z-10 shadow-sm">
+      <header
+        className="
+          flex items-center gap-3 p-4 border-b bg-white shadow-sm
+          fixed top-[56px] left-0 right-0 z-10
+          md:sticky  md:z-10
+        "
+      >
         {selectedUser?.avatar && (
           <img
             src={selectedUser.avatar}
             alt="avatar"
             className="w-10 h-10 rounded-full border shadow-sm"
+             onClick={(e) => {
+                          e.stopPropagation(); //  prevent selecting user
+                          setPreview(selectedUser.avatar);
+                        }}
           />
         )}
         <div>
@@ -142,82 +186,176 @@ const API_URL = import.meta.env.VITE_API_URL;
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 space-y-3 md:pt-5 pt-20 md:pb-0 pb-20">
-        {messages.map((m, i) => {
-          const mine = m.sender === user.username;
-          return (
-            <div
-              key={m._id || i}
-              className={`flex items-end ${
-                mine ? "justify-end" : "justify-start"
-              }`}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                if (mine) setSelectedMessage(m._id);
-              }}
-              onTouchStart={() => mine && handleTouchStart(m._id)}
-              onTouchEnd={handleTouchEnd}
-            >
-              {!mine && (
-                <img
-                  src={m.senderAvatar}
-                  alt="avatar"
-                  className="w-8 h-8 rounded-full mr-2 shadow-sm"
-                />
-              )}
-
-              <div
-                className={`relative max-w-[75%] px-4 py-2 rounded-2xl shadow-sm ${
-                  mine
-                    ? "bg-blue-600 text-white rounded-br-none"
-                    : "bg-gray-100 text-gray-800 rounded-bl-none"
-                } ${selectedMessage === m._id ? "ring-2 ring-red-400" : ""}`}
-              >
-                <div className="text-sm leading-snug">{m.text}</div>
-                <div className="text-[11px] mt-1 flex items-center justify-end gap-1">
-                  <span className="opacity-70">
-                    {new Date(m.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                  {mine && (
-                    <span className="text-xs">{m.read ? "✓✓" : "✓"}</span>
-                  )}
-                </div>
-
-                {/* Delete button */}
-                {mine && selectedMessage === m._id && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(m._id);
-                    }}
-                    className="absolute -top-7 right-0 flex items-center gap-1 text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded shadow-md"
-                  >
-                    <Trash2 size={14} />
-                    Delete
-                  </button>
-                )}
+      <div
+        className="
+          flex-1 overflow-y-auto px-3
+          pt-[120px] md:pt-8 md:pb-28 pb-24
+        "
+      >
+        {loading ? (
+          // 🔄 Loader + Skeleton
+          <div className="flex flex-col gap-4 items-center justify-center h-full">
+            <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+            <div className="w-full flex flex-col gap-2 px-6">
+              <div className="w-1/2 h-5 bg-gray-200 rounded-lg animate-pulse" />
+              <div className="w-1/3 h-5 bg-gray-200 rounded-lg animate-pulse self-end" />
+              <div className="w-2/3 h-5 bg-gray-200 rounded-lg animate-pulse" />
+            </div>
+          </div>
+        ) : (
+          Object.keys(grouped).map((dateLabel) => (
+            <div key={dateLabel}>
+              {/* 📌 Date Divider */}
+              <div className="flex justify-center my-6">
+                <span
+                  className="
+                    bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200
+                    text-gray-700 text-xs font-semibold
+                    px-4 py-1.5
+                    rounded-full shadow-sm border border-gray-300
+                    backdrop-blur-sm
+                  "
+                >
+                  {dateLabel}
+                </span>
               </div>
 
-              {mine && (
-                <img
-                  src={user.avatar}
-                  alt="me"
-                  className="w-8 h-8 rounded-full ml-2 shadow-sm"
-                />
-              )}
+              {grouped[dateLabel].map((m, i) => {
+                const mine = m.sender === user.username;
+                const isOptimistic = !m._id || typeof m._id === "number";
+
+                return (
+                  <div
+                    key={m._id || i}
+                    className={`flex items-end ${
+                      mine ? "justify-end" : "justify-start"
+                    } mt-4 mb-2`}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      if (mine && !isOptimistic) setSelectedMessage(m._id);
+                    }}
+                    onTouchStart={() =>
+                      mine && !isOptimistic && handleTouchStart(m._id)
+                    }
+                    onTouchEnd={handleTouchEnd}
+                  >
+                    {/*  Always show avatar */}
+                    {!mine && (
+                      <img
+                        src={m.senderAvatar}
+                        alt="avatar"
+                        className="w-8 h-8 rounded-full mr-2 shadow-sm"
+                      />
+                    )}
+
+                    <div
+                      className={`relative max-w-[70%] px-4 py-2 rounded-2xl shadow-sm ${
+                        mine
+                          ? "bg-blue-600 text-white rounded-br-none"
+                          : "bg-gray-100 text-gray-800 rounded-bl-none"
+                      } ${
+                        selectedMessage === m._id ? "ring-2 ring-red-400" : ""
+                      }`}
+                    >
+                      <div
+                      className={`text-sm leading-snug whitespace-pre-wrap break-words break-all overflow-hidden ${
+                        mine ? "text-white" : "text-gray-800"
+                      }`}
+                      dangerouslySetInnerHTML={{
+                        __html: m.text
+                          //  URLs (http, https, www.)
+                          .replace(
+                            /((https?:\/\/[^\s]+)|(www\.[^\s]+))/g,
+                            (match) => {
+                              let url = match.startsWith("http")
+                                ? match
+                                : `https://${match}`;
+                              let display =
+                                match.length > 40
+                                  ? match.slice(0, 37) + "..."
+                                  : match;
+
+                              let linkClass = mine
+                                ? "text-white underline"
+                                : "text-blue-500 underline";
+
+                              return `<a href="${url}" target="_blank" rel="noopener noreferrer" title="${url}" class="${linkClass} break-words break-all">${display}</a>`;
+                            }
+                          )
+                          //  Emails
+                          .replace(
+                            /([\w.-]+@[\w.-]+\.[A-Za-z]{2,})/g,
+                            (match) => {
+                              let linkClass = mine
+                                ? "text-white underline"
+                                : "text-blue-500 underline";
+                              return `<a href="mailto:${match}" title="Send email to ${match}" class="${linkClass} break-words break-all">${match}</a>`;
+                            }
+                          )
+                          //  Phone numbers
+                          .replace(/(\+?\d[\d\s-]{7,}\d)/g, (match) => {
+                            const tel = match.replace(/[\s-]/g, "");
+                            let linkClass = mine
+                              ? "text-white underline"
+                              : "text-blue-500 underline";
+                            return `<a href="tel:${tel}" title="Call ${match}" class="${linkClass} break-words break-all">${match}</a>`;
+                          }),
+                      }}
+                    ></div>
+
+                      <div className="text-[11px] mt-1 flex items-center justify-end gap-1">
+                        <span className="opacity-70">
+                          {new Date(m.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                        {mine && (
+                          <span className="text-xs">
+                            {isOptimistic ? "…" : m.read ? "✓✓" : "✓"}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Delete button */}
+                      {mine && !isOptimistic && selectedMessage === m._id && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(m._id);
+                          }}
+                          className="absolute -top-7 right-0 flex items-center gap-1 text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded shadow-md"
+                        >
+                          <Trash2 size={14} />
+                          Delete
+                        </button>
+                      )}
+                    </div>
+
+                    {mine && (
+                      <img
+                        src={user.avatar}
+                        alt="me"
+                        className="w-8 h-8 rounded-full ml-2 shadow-sm"
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          ))
+        )}
         <div ref={endRef} />
       </div>
 
       {/* Input */}
       <form
         onSubmit={submit}
-        className="flex items-center gap-2 p-3 border-t bg-gray-50 md:static fixed bottom-0 left-0 right-0 z-10"
+        className="
+          flex items-center gap-2 p-3 border-t bg-gray-50
+          fixed bottom-0 left-0 right-0 z-10
+          md:sticky md:bottom-0 md:z-10
+        "
       >
         <input
           value={text}
@@ -234,6 +372,19 @@ const API_URL = import.meta.env.VITE_API_URL;
           Send
         </button>
       </form>
+       {/* 🔹 Image Preview Modal */}
+      {preview && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-[999]"
+          onClick={() => setPreview(null)}
+        >
+          <img
+            src={preview}
+            alt="preview"
+            className="max-w-[90%] max-h-[80%] rounded-lg shadow-lg object-contain"
+          />
+        </div>
+      )}
     </div>
   );
 }
