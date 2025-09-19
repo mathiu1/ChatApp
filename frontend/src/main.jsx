@@ -6,15 +6,30 @@ import App from "./App";
 import Login from "./pages/Login";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import "./index.css";
+import { Loader2 } from "lucide-react";
+
+
+
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+        {/* Spinner */}
+        <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
+
+        {/* Fancy text */}
+        <p className="text-gray-600 text-sm font-medium animate-pulse">
+          Loading your chat...
+        </p>
+      </div>
+    );
   }
 
   return user ? children : <Navigate to="/login" replace />;
 }
+
 createRoot(document.getElementById("root")).render(
   <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
     <AuthProvider>

@@ -58,7 +58,7 @@ io.on("connection", (socket) => {
       { new: true }
     ).exec();
 
-    // ✅ notify others a user joined
+    // notify others a user joined
     if (userDoc) {
       io.emit("userJoined", {
         username: userDoc.username,

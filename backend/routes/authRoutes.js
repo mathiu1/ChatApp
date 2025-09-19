@@ -36,6 +36,8 @@ router.post("/google", async (req, res) => {
     });
     res.json({
       user: { id: user._id, username: email, name, avatar: picture },
+      token: jwtToken
+
     }); // send avatar
   } catch (err) {
     res.status(500).json({ msg: "Google login failed" });
@@ -49,7 +51,6 @@ router.post("/logout", protect, async (req, res) => {
       await User.findByIdAndUpdate(req.user._id, {
         online: false,
         lastSeen: new Date(),
-         
       });
       //await User.findByIdAndDelete(req.user._id);
     }

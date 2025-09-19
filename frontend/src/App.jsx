@@ -14,6 +14,8 @@ export default function App() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadSideData, setLoadSideData] = useState(true);
   const API_URL = import.meta.env.VITE_API_URL;
 
   // 🔑 Refs for latest values inside socket handlers
@@ -33,13 +35,18 @@ export default function App() {
     if (user) socket.emit("addUser", user.username);
 
     const fetchContacts = async () => {
+      setLoadSideData(true);
       try {
-        const { data } = await axios.get(`${API_URL}/api/auth/users`, {
-          withCredentials: true,
-        });
+        // ✅ fetch from new endpoint (includes unread counts)
+        const { data } = await axios.get(
+          `${API_URL}/api/messages/contacts/list`,
+          { withCredentials: true }
+        );
         setContacts(data);
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoadSideData(false);
       }
     };
     fetchContacts();
@@ -101,7 +108,7 @@ export default function App() {
             c.username === msg.sender
               ? {
                   ...c,
-                  unread: (c.unread || 0) + 1,
+                  unread: (c.unread || 0) + 1, // ✅ increment unread
                   lastMessageAt: msg.createdAt,
                 }
               : c
@@ -120,9 +127,7 @@ export default function App() {
 
     const handleMessagesRead = ({ messageIds }) => {
       setMessages((prev) =>
-        prev.map((m) =>
-          messageIds.includes(m._id) ? { ...m, read: true } : m
-        )
+        prev.map((m) => (messageIds.includes(m._id) ? { ...m, read: true } : m))
       );
     };
 
@@ -139,25 +144,50 @@ export default function App() {
       setMessages((prev) => prev.filter((m) => m._id !== messageId));
     };
 
+    // ✅ New: live updates for users
+    const handleUserJoined = (newUser) => {
+      setContacts((prev) => {
+        const exists = prev.find((c) => c.username === newUser.username);
+        if (exists) {
+          return prev.map((c) =>
+            c.username === newUser.username ? { ...c, ...newUser } : c
+          );
+        }
+        return [...prev, newUser];
+      });
+    };
+
+    const handleUserLeft = (username) => {
+      setContacts((prev) =>
+        prev.map((c) =>
+          c.username === username
+            ? { ...c, online: false, lastSeen: new Date().toISOString() }
+            : c
+        )
+      );
+    };
+
     socket.on("receiveMessage", handleMessage);
     socket.on("messagesRead", handleMessagesRead);
     socket.on("onlineUsers", handleOnlineUsers);
     socket.on("messageDeleted", handleDeleted);
+    socket.on("userJoined", handleUserJoined);
+    socket.on("userLeft", handleUserLeft);
 
     return () => {
       socket.off("receiveMessage", handleMessage);
       socket.off("messagesRead", handleMessagesRead);
       socket.off("onlineUsers", handleOnlineUsers);
       socket.off("messageDeleted", handleDeleted);
+      socket.off("userJoined", handleUserJoined);
+      socket.off("userLeft", handleUserLeft);
     };
   }, [user]); // ✅ only re-run if user changes
 
   // Keep selectedUser in sync with contacts
   useEffect(() => {
     if (!selectedUser) return;
-    const updated = contacts.find(
-      (c) => c.username === selectedUser.username
-    );
+    const updated = contacts.find((c) => c.username === selectedUser.username);
     if (updated && JSON.stringify(updated) !== JSON.stringify(selectedUser)) {
       setSelectedUser(updated);
     }
@@ -169,6 +199,7 @@ export default function App() {
       if (!selectedUser) return;
 
       try {
+        setLoading(true);
         const { data } = await axios.get(
           `${API_URL}/api/messages/${selectedUser.username}`,
           { withCredentials: true }
@@ -199,13 +230,15 @@ export default function App() {
           setContacts((prev) =>
             prev.map((c) =>
               c.username === selectedUser.username
-                ? { ...c, lastMessageAt: last.createdAt }
+                ? { ...c, lastMessageAt: last.createdAt, unread: 0 } // ✅ reset unread on open
                 : c
             )
           );
         }
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchMessages();
@@ -263,8 +296,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen max-h-screen overflow-hidden
-     bg-gray-100 flex flex-col ">
+    <div className="min-h-screen max-h-screen overflow-hidden bg-gray-100 flex flex-col ">
       <Navbar
         onLogout={handleLogout}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -273,10 +305,11 @@ export default function App() {
       <div className="flex-1 flex overflow-hidden ">
         {/* Sidebar */}
         <Sidebar
-          contacts={contacts}
+          contacts={[...contacts].filter((c) => c.username !== user?.username)}
           selectUser={handleSelectUser}
           selected={selectedUser?.username}
           isOpen={isSidebarOpen}
+          loading={loadSideData}
           onClose={() => setIsSidebarOpen(false)}
         />
 
@@ -287,6 +320,7 @@ export default function App() {
               messages={messages}
               onSend={sendAndSave}
               selectedUser={selectedUser}
+              loading={loading}
             />
           ) : (
             <div className="text-center min-h-screen -mt-16 flex flex-col items-center justify-center">

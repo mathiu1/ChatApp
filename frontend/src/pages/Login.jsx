@@ -31,7 +31,7 @@ export default function Login() {
             ChatApp
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Connect instantly, anywhere 🚀
+            Connect instantly, anywhere 
           </p>
         </div>
 
@@ -39,7 +39,7 @@ export default function Login() {
         <div className="text-center mb-6">
           <p className="text-gray-600 text-sm leading-relaxed">
            A simple,
-            fast, and secure way to chat with your friends and colleagues.
+            fast, and secure way to chat with one to one your friends and colleagues.
           </p>
           
         </div>
@@ -56,15 +56,7 @@ export default function Login() {
 
         {/* Footer */}
         <p className="mt-6 text-xs text-gray-400 text-center leading-relaxed">
-          By continuing, you agree to our{" "}
-          <span className="text-blue-600 cursor-pointer hover:underline">
-            Terms
-          </span>{" "}
-          &{" "}
-          <span className="text-blue-600 cursor-pointer hover:underline">
-            Privacy Policy
-          </span>
-          . We respect your privacy ❤️
+           We respect your privacy ❤️
         </p>
       </div>
     </div>

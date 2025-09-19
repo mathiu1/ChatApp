@@ -7,7 +7,15 @@ export default function Navbar({ onLogout, onToggleSidebar }) {
   const { user } = useAuth();
 
   return (
-    <nav className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 flex justify-between items-center shadow-md sticky top-0 z-50">
+    <nav
+      className="
+        fixed top-0 left-0 right-0
+        bg-gradient-to-r from-blue-500 to-blue-600
+        text-white px-4 sm:px-6 py-3
+        flex justify-between items-center
+        shadow-md z-50
+      "
+    >
       {/* Left: Logo + Mobile Menu */}
       <div className="flex items-center gap-3">
         {user && (
@@ -28,35 +36,33 @@ export default function Navbar({ onLogout, onToggleSidebar }) {
 
       {/* Right: User Info + Logout */}
       {user && (
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           {/* Avatar + Name */}
           <div className="flex items-center gap-2">
             {user.avatar ? (
               <img
                 src={user.avatar}
                 alt="avatar"
-                className="w-9 h-9 rounded-full border border-white/40"
+                className="w-9 h-9 rounded-full border border-white/40 object-cover"
               />
             ) : (
               <div className="w-9 h-9 rounded-full bg-blue-800 flex items-center justify-center text-sm font-medium">
-                {user.username?.[0].toUpperCase()}
+                {user.username?.[0]?.toUpperCase()}
               </div>
             )}
-            <span className="hidden sm:inline font-medium text-sm">
+            <span className="hidden sm:inline font-medium text-sm truncate max-w-[120px]">
               {user.name || user.username}
             </span>
           </div>
 
           {/* Logout Button */}
-         {/* Logout Button */}
-<button
-  onClick={onLogout}
-  className="flex items-center gap-2 px-4 py-1.5 rounded bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium"
->
-  <LogOut size={16} />
-  <span className="hidden sm:inline">Logout</span>
-</button>
-
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium"
+          >
+            <LogOut size={16} />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
         </div>
       )}
     </nav>
