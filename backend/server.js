@@ -9,7 +9,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import Message from "./models/Message.js";
 import User from "./models/User.js";
-import axios from "axios"; // ✅ FIX: needed for self-ping
+import axios from "axios"; //  FIX: needed for self-ping
 
 import path from "path";
 import { fileURLToPath } from "url";
@@ -125,7 +125,7 @@ io.on("connection", (socket) => {
           { new: true }
         ).exec();
 
-        // ✅ notify others user left
+        //  notify others user left
         if (userDoc) {
           io.emit("userLeft", username);
         }
@@ -152,7 +152,7 @@ io.on("connection", (socket) => {
 server.listen(process.env.PORT, () => {
   console.log(` Server running on ${process.env.PORT}`);
 
-  const PING_URL = "https://chatapp-250t.onrender.com/ping";
+ {/* const PING_URL = "https://chatapp-250t.onrender.com/ping";
   setInterval(async () => {
     try {
       const res = await axios.get(PING_URL);
@@ -160,5 +160,5 @@ server.listen(process.env.PORT, () => {
     } catch (err) {
       console.error("Self-ping failed:", err.message);
     }
-  }, 5 * 60 * 1000);
+  }, 5 * 60 * 1000);*/}
 });
