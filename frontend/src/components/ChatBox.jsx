@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import socket from "../socket";
 import { useAuth } from "../context/AuthContext";
-import axios from "axios";
+
 import { Trash2, Loader2 } from "lucide-react";
 import api from "../api/axiosClient";
+import { SendHorizontal } from "lucide-react";
 
 export default function ChatBox({ messages, onSend, selectedUser, loading }) {
-  const API_URL = import.meta.env.VITE_API_URL;
+  
 
   const [text, setText] = useState("");
   const [typing, setTyping] = useState(false);
@@ -140,13 +141,13 @@ export default function ChatBox({ messages, onSend, selectedUser, loading }) {
 
   return (
     <div
-      className="flex flex-col h-full md:h-screen bg-white rounded-lg shadow relative"
+      className="flex flex-col h-full md:h-screen bg-[#181826] rounded-lg shadow-xl relative"
       onClick={() => setSelectedMessage(null)}
     >
       {/* Header */}
       <header
         className="
-          flex items-center gap-3 p-4 border-b bg-white shadow-sm
+          flex items-center gap-3 p-4 border-b border-white/10 bg-[#1f1f2e] shadow
           fixed top-[56px] left-0 right-0 z-10
           md:sticky  md:z-10
         "
@@ -155,7 +156,7 @@ export default function ChatBox({ messages, onSend, selectedUser, loading }) {
           <img
             src={selectedUser.avatar}
             alt="avatar"
-            className="w-10 h-10 rounded-full border shadow-sm"
+            className="w-10 h-10 rounded-full border border-white/20 shadow-sm"
             onClick={(e) => {
               e.stopPropagation(); //  prevent selecting user
               setPreview(selectedUser.avatar);
@@ -163,23 +164,53 @@ export default function ChatBox({ messages, onSend, selectedUser, loading }) {
           />
         )}
         <div>
-          <div className="font-semibold text-gray-900 text-base">
+          <div className="font-semibold text-white text-base">
             {selectedUser?.name || selectedUser?.username}
           </div>
           {isTyping ? (
-            <div className="italic text-blue-500 text-xs">typing...</div>
+            <div className="italic text-pink-500 text-xs">typing...</div>
           ) : selectedUser?.online ? (
             <div className="text-xs text-green-500 font-medium">Online</div>
-          ) : selectedUser?.lastSeen ? (
-            <div className="text-xs text-gray-500">
-              last seen{" "}
-              {new Date(selectedUser.lastSeen).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </div>
-          ) : (
-            <div className="text-xs text-gray-400">Offline</div>
+          ) : selectedUser?.lastSeen ? (() => {
+                            const lastSeenDate = new Date(selectedUser?.lastSeen);
+                            const today = new Date();
+                            const yesterday = new Date();
+                            yesterday.setDate(today.getDate() - 1);
+
+                            if (
+                              lastSeenDate.toDateString() ===
+                              today.toDateString()
+                            ) {
+                              return <div className="text-gray-400">last seen {lastSeenDate.toLocaleTimeString(
+                                [],
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}</div>;
+                            } else if (
+                              lastSeenDate.toDateString() ===
+                              yesterday.toDateString()
+                            ) {
+                              return <div className="text-gray-400">yesterday {lastSeenDate.toLocaleTimeString(
+                                [],
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}</div>;
+                            } else {
+                              return <div className="text-gray-400">{lastSeenDate.toLocaleDateString([], {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })},{lastSeenDate.toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}</div>;
+                            }
+                          })() : (
+            <div className="text-xs text-gray-500">Offline</div>
           )}
         </div>
       </header>
@@ -192,9 +223,9 @@ export default function ChatBox({ messages, onSend, selectedUser, loading }) {
         "
       >
         {loading ? (
-          // 🔄 Loader + Skeleton
+          //  Loader + Skeleton
           <div className="flex flex-col gap-4 items-center justify-center h-full">
-            <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+            <Loader2 className="w-6 h-6 text-pink-400 animate-spin" />
             <div className="w-full flex flex-col gap-2 px-6">
               <div className="w-1/2 h-5 bg-gray-200 rounded-lg animate-pulse" />
               <div className="w-1/3 h-5 bg-gray-200 rounded-lg animate-pulse self-end" />
@@ -210,7 +241,7 @@ export default function ChatBox({ messages, onSend, selectedUser, loading }) {
                   className="
                     bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200
                     text-gray-700 text-xs font-semibold
-                    px-4 py-1.5
+                    px-4 py-2.5
                     rounded-full shadow-sm border border-gray-300
                     backdrop-blur-sm
                   "
@@ -250,20 +281,16 @@ export default function ChatBox({ messages, onSend, selectedUser, loading }) {
                     <div
                       className={`relative max-w-[70%] px-4 py-2 rounded-2xl shadow-sm ${
                         mine
-                          ? "bg-blue-600 text-white rounded-br-none"
-                          : "bg-gray-100 text-gray-800 rounded-bl-none"
+                          ? "bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-500 text-white rounded-br-none shadow-lg border border-white/10"
+                          : "bg-white/10 text-gray-100 rounded-bl-none"
                       } ${
                         selectedMessage === m._id ? "ring-2 ring-red-400" : ""
                       }`}
-                      style={
-                        mine
-                          ? { backgroundColor: "#2563eb", color: "#ffffff" }
-                          : { backgroundColor: "#f3f4f6", color: "#1f2937" }
-                      }
+                      
                     >
                       <div
                         className={`text-sm leading-snug whitespace-pre-wrap break-words break-all overflow-hidden ${
-                          mine ? "text-white" : "text-gray-800"
+                          mine ? "text-white" : "text-white"
                         }`}
                         dangerouslySetInnerHTML={{
                           __html: m.text
@@ -356,25 +383,28 @@ export default function ChatBox({ messages, onSend, selectedUser, loading }) {
       <form
         onSubmit={submit}
         className="
-          flex items-center gap-2 p-3 border-t bg-gray-50
+          flex items-center gap-2 px-3 p-1 md:p-3 border-t  border-white/10 bg-[#1f1f2e]
           fixed bottom-0 left-0 right-0 z-10
           md:sticky md:bottom-0 md:z-10
         "
       >
-        <input
-          value={text}
-          onChange={handleChange}
-          placeholder={`Message ${
-            selectedUser?.name || selectedUser?.username
-          }...`}
-          className="flex-1 border rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-white shadow-sm"
-        />
-        <button
-          type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full text-sm font-medium shadow-md transition"
-        >
-          Send
-        </button>
+       <div className="flex flex-1 items-center bg-white/5 border border-white/10 rounded-full px-3 py-1 shadow-inner">
+          {/* Input */}
+          <input
+            value={text}
+            onChange={handleChange}
+            placeholder={`Message ${selectedUser?.name || selectedUser?.username}...`}
+            className="flex-1 bg-transparent text-sm px-3 py-2 text-white placeholder-gray-400 outline-none"
+          />
+
+          {/* Send Button inside input */}
+          <button
+            type="submit"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-500 hover:opacity-90 hover:scale-105 transition-all shadow-md"
+          >
+            <SendHorizontal size={18} className="text-white" />
+          </button>
+        </div>
       </form>
       {/* 🔹 Image Preview Modal */}
       {preview && (

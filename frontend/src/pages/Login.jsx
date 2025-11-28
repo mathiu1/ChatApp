@@ -29,13 +29,13 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-pink-100 p-4">
       <div className="bg-white w-full max-w-sm rounded-xl shadow-lg p-6 flex flex-col items-center">
         {/* Logo / App Name */}
         <div className="mb-6 text-center">
-          <h1 className="text-3xl font-semibold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent tracking-wide">
-            ChatApp
-          </h1>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-500 bg-clip-text text-transparent tracking-tight">
+  ChatApp
+</h1>
           <p className="text-sm text-gray-500 mt-1">
             Connect instantly, anywhere 
           </p>

@@ -15,12 +15,12 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-[#1a1a27] to-[#222233] ">
         {/* Spinner */}
-        <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
+        <Loader2 className="w-10 h-10 text-pink-600 animate-spin mb-4" />
 
         {/* Fancy text */}
-        <p className="text-gray-600 text-sm font-medium animate-pulse">
+        <p className="text-gray-200 text-sm font-medium animate-pulse">
           Loading your chat...
         </p>
       </div>

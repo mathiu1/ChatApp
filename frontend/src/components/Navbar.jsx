@@ -10,29 +10,25 @@ export default function Navbar({ onLogout, onToggleSidebar }) {
     <nav
       className="
     fixed top-0 left-0 right-0
-    bg-gradient-to-r from-blue-500 to-blue-600
-    text-white px-4 sm:px-6 py-3
+    w-full bg-gradient-to-r from-purple-700 to-pink-600  text-white  px-4 sm:px-6 py-3 shadow-lg
     flex justify-between items-center
-    shadow-md z-50
+     z-50 backdrop-blur-lg bg-opacity-95 border-b border-white/20
   "
-      style={{
-        background: "linear-gradient(to right, #3b82f6, #2563eb)", // fallback gradient
-        color: "#ffffff", // ensure text is white
-      }}
+      
     >
       {/* Left: Logo + Mobile Menu */}
       <div className="flex items-center gap-3">
         {user && (
           <button
             onClick={onToggleSidebar}
-            className="md:hidden p-2 rounded-md hover:bg-blue-700/40 focus:outline-none transition"
+            className="md:hidden p-2 rounded-lg hover:bg-white/20 transition duration-200"
           >
             <Menu size={22} />
           </button>
         )}
 
-        <div className="font-semibold text-lg tracking-tight">
-          <Link to="/" className="hover:text-gray-200 transition">
+        <div className="font-semibold text-lg md:font-bold md:text-xl tracking-tight">
+          <Link to="/" className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 via-pink-400 to-purple-400">
             ChatApp
           </Link>
         </div>
@@ -47,11 +43,11 @@ export default function Navbar({ onLogout, onToggleSidebar }) {
               <img
                 src={user.avatar}
                 alt="avatar"
-                className="w-9 h-9 rounded-full border border-white/40 object-cover"
+                className="w-10 h-10 rounded-full border-2 border-white/40 shadow-md"
               />
             ) : (
-              <div className="w-9 h-9 rounded-full bg-blue-800 flex items-center justify-center text-sm font-medium">
-                {user.username?.[0]?.toUpperCase()}
+             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-700 via-pink-600 to-orange-500 flex items-center justify-center text-sm font-semibold shadow-md text-white">
+                {user.username?.[0].toUpperCase()}
               </div>
             )}
             <span className="hidden sm:inline font-medium text-sm truncate max-w-[120px]">
@@ -62,24 +58,8 @@ export default function Navbar({ onLogout, onToggleSidebar }) {
           {/* Logout Button */}
           <button
             onClick={onLogout}
-            className="
-    flex items-center gap-1.5 sm:gap-2
-    px-3 sm:px-4 py-1.5 rounded
-    transition-all duration-200 shadow-sm hover:shadow-md
-    text-sm font-medium text-white
-  "
-            style={{
-              background: "linear-gradient(to right, #ef4444, #dc2626)", // 🔴 normal gradient
-              color: "#ffffff",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background =
-                "linear-gradient(to right, #dc2626, #b91c1c)"; // 🔴 hover gradient
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background =
-                "linear-gradient(to right, #ef4444, #dc2626)"; // 🔴 back to normal
-            }}
+            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-red-500 via-rose-600 to-pink-600 hover:from-red-600 hover:via-rose-700 hover:to-pink-700 transition duration-200 shadow-md text-sm font-semibold"
+            
           >
             <LogOut size={16} />
             <span className="hidden sm:inline">Logout</span>

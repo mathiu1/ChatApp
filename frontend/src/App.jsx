@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
+
 import socket from "./socket";
 import { useAuth } from "./context/AuthContext";
 import ChatBox from "./components/ChatBox";
@@ -7,7 +7,7 @@ import Sidebar from "./components/Sidebar";
 import Navbar from "./components/Navbar";
 import api from "./api/axiosClient";
 
-axios.defaults.withCredentials = true;
+
 
 export default function App() {
   const { user, logout } = useAuth();
@@ -22,59 +22,54 @@ export default function App() {
   const contactsRef = useRef(contacts);
   const selectedUserRef = useRef(selectedUser);
 
-
   const [showExitModal, setShowExitModal] = useState(false);
 
-// ref to keep pop handler for removal
-const popHandlerRef = useRef(null);
+  // ref to keep pop handler for removal
+  const popHandlerRef = useRef(null);
 
+  useEffect(() => {
+    // handler stored in ref so we can remove it later
+    popHandlerRef.current = (e) => {
+      // prevent the default navigation
+      e.preventDefault();
 
-useEffect(() => {
-  // handler stored in ref so we can remove it later
-  popHandlerRef.current = (e) => {
-    // prevent the default navigation
-    e.preventDefault();
+      // show modal
+      setShowExitModal(true);
 
-    // show modal
-    setShowExitModal(true);
+      // restore history state so users stay on the same page
+      // (prevents immediate navigation after showing modal)
+      window.history.pushState(null, "", window.location.href);
+    };
 
-    // restore history state so users stay on the same page
-    // (prevents immediate navigation after showing modal)
+    // push a duplicate state so the first back triggers popstate
     window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", popHandlerRef.current);
+
+    return () => {
+      // cleanup
+      window.removeEventListener("popstate", popHandlerRef.current);
+    };
+  }, []);
+
+  const handleContinueChat = () => {
+    setShowExitModal(false);
+    setIsSidebarOpen(true); // open sidebar as requested
+    // keep the history state intact (we already pushed it)
   };
 
-  // push a duplicate state so the first back triggers popstate
-  window.history.pushState(null, "", window.location.href);
-  window.addEventListener("popstate", popHandlerRef.current);
+  const handleExitApp = () => {
+    // Remove popstate handler to avoid re-triggering modal
+    if (popHandlerRef.current) {
+      window.removeEventListener("popstate", popHandlerRef.current);
+    }
 
-  return () => {
-    // cleanup
-    window.removeEventListener("popstate", popHandlerRef.current);
+    // Try to close the window (will only work if the tab was opened by script)
+    window.open("", "_self"); // trick: overwrite the current tab
+    window.close();
+
+    
+    window.location.href = "https://google.com";
   };
-}, []);
-
-const handleContinueChat = () => {
-  setShowExitModal(false);
-  setIsSidebarOpen(true); // open sidebar as requested
-  // keep the history state intact (we already pushed it)
-};
-
-const handleExitApp = () => {
-  // Remove popstate handler to avoid re-triggering modal
-  if (popHandlerRef.current) {
-    window.removeEventListener("popstate", popHandlerRef.current);
-  }
-
-  // Try to close the window (will only work if the tab was opened by script)
-  window.open('', '_self'); // trick: overwrite the current tab
-  window.close();
-
-  //  Fallback: if close is blocked, redirect user away
-  // Use your own goodbye page, about:blank, or Google
-  window.location.href = "https://google.com"; 
-};
-
-
 
   useEffect(() => {
     contactsRef.current = contacts;
@@ -363,7 +358,7 @@ const handleExitApp = () => {
         />
 
         {/* Chatbox */}
-        <div className="flex-1 bg-gray-50 px-0.5 md:px-4">
+        <div className="flex-1 bg-gradient-to-b from-[#1a1a27] to-[#222233] px-0.5 md:px-4">
           {selectedUser ? (
             <ChatBox
               messages={messages}
@@ -380,15 +375,7 @@ const handleExitApp = () => {
               {/* Start Chat button (mobile only) */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="
-    md:hidden
-    bg-gradient-to-r from-blue-500 to-blue-600
-    text-white px-5 py-2 rounded-full shadow
-  "
-                style={{
-                  background: "linear-gradient(to right, #3b82f6, #2563eb)", //  fallback for blue gradient
-                  color: "#ffffff",
-                }}
+                className="md:hidden bg-gradient-to-r from-purple-700 to-pink-600  text-white/90 px-5 py-2 rounded-full shadow"
               >
                 Start Chat
               </button>
@@ -397,44 +384,40 @@ const handleExitApp = () => {
         </div>
       </div>
 
-
-
-
-{showExitModal && (
-  <div
-    className="fixed inset-0 bg-black/50 flex items-center justify-center z-[999]"
-    onClick={() => setShowExitModal(false)}
-  >
-    <div
-      className="bg-white rounded-lg p-5 w-[90%] max-w-sm shadow-lg"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">Exit app?</h3>
-      <p className="text-sm text-gray-600 mb-4">
-        Do you want to exit the site or continue chatting?
-      </p>
-
-      <div className="flex justify-end gap-3">
-        <button
-          onClick={handleContinueChat}
-          className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm"
+      {showExitModal && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[999]"
+          onClick={() => setShowExitModal(false)}
         >
-          Continue
-        </button>
+          <div
+            className="bg-white rounded-lg p-5 w-[90%] max-w-sm shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Exit app?
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Do you want to exit the site or continue chatting?
+            </p>
 
-        <button
-          onClick={handleExitApp}
-          className="px-4 py-2 rounded bg-red-500 hover:bg-red-600 text-white text-sm"
-        >
-          Exit
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleContinueChat}
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm"
+              >
+                Continue
+              </button>
 
-
-
+              <button
+                onClick={handleExitApp}
+                className="px-4 py-2 rounded bg-red-500 hover:bg-red-600 text-white text-sm"
+              >
+                Exit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

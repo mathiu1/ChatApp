@@ -48,7 +48,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 
-// ✅ NEW: Contacts with unread counts
+//NEW: Contacts with unread counts
 router.get("/contacts/list", protect, async (req, res) => {
   try {
     const users = await User.find().select("username name avatar online lastSeen");
